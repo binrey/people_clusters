@@ -1,10 +1,18 @@
 import os
 import pickle
+import logging
+import numpy as np
 from abc import ABC, abstractmethod
 import pandas as pd
 from matplotlib import pyplot as plt
 from sklearn.preprocessing import LabelEncoder
 from collections import Counter
+from pathlib import Path
+
+
+def get_logger(logger_name):
+   logger = logging.getLogger(logger_name)
+   logger.setLevel(logging.DEBUG)
 
 
 class DataLoader(ABC):
@@ -29,13 +37,28 @@ class MyDataLoader(DataLoader):
         self.data = pd.read_csv(data_path)
         enc = LabelEncoder()
         self.data["cluster_num"] = enc.fit_transform(self.data.cluster_id)
+        logging.info(f"Loaded {len(self.data)} images")
     
     def read_encodings(self, data_path):
         self.encodings = pickle.loads(open(data_path, "rb").read())
+        logging.info(f"Loaded {len(self.encodings)} encodings")
 
     def show_stats(self):
         counter = Counter(self.data.cluster_num)
         return plt.plot(range(len(counter)), sorted(counter.values(), reverse=True), ".-")
+    
+    def get_xy(self):
+        gt, x = [], []
+        for enc in self.encodings:
+            if len(enc["encoding"]):
+                key = Path(enc["imagePath"]).name
+                tmp = self.data[self.data.file_name == key]
+                if len(tmp):
+                    gt.append(tmp.cluster_num.values[0])
+                    x.append(enc["encoding"])
+        x, gt = np.array(x), np.array(gt)
+        logging.info(f"Sync images with faces. Encodings x: {x.shape}, labeled clusters y:{gt.shape}")
+        return x, gt
 
 
 image_types = (".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff")
@@ -64,3 +87,8 @@ def list_files(basePath, validExts=None, contains=None):
                 # construct the path to the image and yield it
                 imagePath = os.path.join(rootDir, filename)
                 yield imagePath
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    logging.info("puk")

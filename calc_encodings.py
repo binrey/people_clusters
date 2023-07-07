@@ -5,6 +5,7 @@ import argparse
 import pickle
 import cv2
 import os
+import logging
 
 
 # construct the argument parser and parse the arguments
@@ -24,27 +25,29 @@ imagePaths = list(utils.list_images(args["dataset"]))
 data = []
 
 # loop over the image paths
-for (i, imagePath) in enumerate(imagePaths):
+for (i, imagePath) in enumerate(imagePaths[:10]):
 	# load the input image and convert it from RGB (OpenCV ordering)
 	# to dlib ordering (RGB)
 	print("[INFO] processing image {}/{}".format(i + 1,
 		len(imagePaths)))
-	print(imagePath)
+	print(imagePath, end=" ")
 	image = cv2.imread(imagePath)
+	print(image.shape, end=" ")
 	rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 	
 	# detect the (x, y)-coordinates of the bounding boxes
 	# corresponding to each face in the input image
 	boxes = face_recognition.face_locations(rgb,
 		model=args["detection_method"])
-	
+	print("found boxes =", len(boxes), end=" ")
 	# compute the facial embedding for the face
 	encodings = face_recognition.face_encodings(rgb, boxes)
-	# build a dictionary of the image path, bounding box location,
-	# and facial encodings for the current image
-	d = [{"imagePath": imagePath, "loc": box, "encoding": enc}
-		for (box, enc) in zip(boxes, encodings)]
+	# choose one face
+	d = [{"imagePath": imagePath,
+          "loc": boxes[0] if len(boxes) else boxes, 
+          "encoding": encodings[0] if len(encodings) else encodings}]
 	data.extend(d)
+	print("data length =", len(data))
 	
 # dump the facial encodings data to disk
 print("[INFO] serializing encodings...")
