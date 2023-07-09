@@ -10,4 +10,5 @@ python calc_encodings.py --dataset=data/clusters --encodings=encodings.json
 
 Run demo.ipynb
 
-![1688918547009](image/README/1688918547009.png)
+![cluster rows](image/README/1688918547009.png)
+![cluster map](image/README/1688918564991.png)
