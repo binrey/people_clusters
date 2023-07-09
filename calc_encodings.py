@@ -6,6 +6,7 @@ import pickle
 import cv2
 import os
 import logging
+import json
 
 
 # construct the argument parser and parse the arguments
@@ -22,10 +23,9 @@ args = vars(ap.parse_args())
 # out data list (which we'll soon populate)
 print("[INFO] quantifying faces...")
 imagePaths = list(utils.list_images(args["dataset"]))
-data = []
-
+data = {}
 # loop over the image paths
-for (i, imagePath) in enumerate(imagePaths[:10]):
+for (i, imagePath) in enumerate(imagePaths):
 	# load the input image and convert it from RGB (OpenCV ordering)
 	# to dlib ordering (RGB)
 	print("[INFO] processing image {}/{}".format(i + 1,
@@ -43,14 +43,12 @@ for (i, imagePath) in enumerate(imagePaths[:10]):
 	# compute the facial embedding for the face
 	encodings = face_recognition.face_encodings(rgb, boxes)
 	# choose one face
-	d = [{"imagePath": imagePath,
-          "loc": boxes[0] if len(boxes) else boxes, 
-          "encoding": encodings[0] if len(encodings) else encodings}]
-	data.extend(d)
+	# t r b l -> l t r b
+	box = [[box[3], box[0], box[1], box[2]] for box in boxes[:1]]
+	data[imagePath] = {"loc": box[0] if len(box) else box, 
+          			   "encoding": tuple(encodings[0] if len(encodings) else encodings)}
 	print("data length =", len(data))
 	
 # dump the facial encodings data to disk
 print("[INFO] serializing encodings...")
-f = open(args["encodings"], "wb")
-f.write(pickle.dumps(data))
-f.close()
+json.dump(data, open(args["encodings"], "w"))
