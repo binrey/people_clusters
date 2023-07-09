@@ -7,6 +7,7 @@ import cv2
 import os
 import logging
 import json
+from pathlib import Path
 
 
 # construct the argument parser and parse the arguments
@@ -37,15 +38,14 @@ for (i, imagePath) in enumerate(imagePaths):
 	
 	# detect the (x, y)-coordinates of the bounding boxes
 	# corresponding to each face in the input image
-	boxes = face_recognition.face_locations(rgb,
-		model=args["detection_method"])
+	boxes = face_recognition.face_locations(rgb, model=args["detection_method"])
 	print("found boxes =", len(boxes), end=" ")
 	# compute the facial embedding for the face
 	encodings = face_recognition.face_encodings(rgb, boxes)
 	# choose one face
 	# t r b l -> l t r b
 	box = [[box[3], box[0], box[1], box[2]] for box in boxes[:1]]
-	data[imagePath] = {"loc": box[0] if len(box) else box, 
+	data[Path(imagePath).name] = {"loc": box[0] if len(box) else box, 
           			   "encoding": tuple(encodings[0] if len(encodings) else encodings)}
 	print("data length =", len(data))
 	

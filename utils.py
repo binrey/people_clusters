@@ -27,6 +27,10 @@ class DataLoader(ABC):
     def show_stats(self):
         pass
 
+    @staticmethod
+    def get_xy(self):
+        pass
+
 
 class MyDataLoader(DataLoader):
     def __init__(self):
@@ -53,7 +57,6 @@ class MyDataLoader(DataLoader):
         gt, x, ids, boxes = [], [], [], []
         for key, enc in self.encodings.items():
             if len(enc["encoding"]):
-                key = Path(key).name
                 tmp = self.data[self.data.file_name == key]
                 if len(tmp):
                     gt.append(tmp.cluster_num.values[0])
@@ -99,7 +102,7 @@ class ClustersDrawer:
         self.ncols = ncols
         self.imgs_path = imgs_path
 
-    def __call__(self, labs_pred, img_names) -> None:
+    def __call__(self, labs_pred, img_names, boxes) -> None:
         clusters = set(labs_pred)
         nclust = len(clusters)
 
@@ -110,9 +113,9 @@ class ClustersDrawer:
             for c in range(self.ncols):
                 if nshot < len(curr_names):
                     img_path = self.imgs_path / curr_names[nshot]
-                    # b = boxes[nshot]
+                    b = boxes[nshot]
                     img = np.array(cv2.cvtColor(cv2.imread(str(img_path)), cv2.COLOR_BGR2RGB))
-                    img_crop = img#[b[0]:b[2], b[3]:b[1]]
+                    img_crop = img[b[1]:b[3], b[0]:b[2]]
                     if min(img_crop.shape) == 0:
                         img_crop = img
                     img_crop = cv2.resize(img_crop, self.img_size)
