@@ -11,8 +11,8 @@ from pathlib import Path
 
 
 class ClusterUsers(ABC):
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, data_loader:DataLoader) -> None:
+        self.x, self.y, self.ids, self.boxes = data_loader.get_xy()
 
     @abstractmethod
     def fit(self, x, min_samples_range, eps_range):
@@ -22,11 +22,14 @@ class ClusterUsers(ABC):
     def validate(self, ground):
         pass
 
+    @property
+    def labs_pred(self):
+        return self._labs_pred
+
 
 class MyClusterUsers(ClusterUsers):
     def __init__(self, data_loader:DataLoader) -> None:
-        super().__init__()
-        self.x, self.y, self.ids, self.boxes = data_loader.get_xy()
+        super().__init__(data_loader)
 
     def fit(self, min_samples_range, eps_range):
         output = []
@@ -44,24 +47,24 @@ class MyClusterUsers(ClusterUsers):
         logging.info(f"eps: {eps}")
 
         logging.debug("Start DBSCAN with optimal parameters...")
-        self.labs_pred = DBSCAN(min_samples=min_samples, eps = eps).fit(self.x).labels_
-        labelIDs = np.unique(self.labs_pred)
+        self._labs_pred = DBSCAN(min_samples=min_samples, eps = eps).fit(self.x).labels_
+        labelIDs = np.unique(self._labs_pred)
         numUniqueFaces = len(np.where(labelIDs > -1)[0])
         logging.info("Unique faces: {}".format(numUniqueFaces))
 
     def validate(self):
-        score = v_measure_score(self.y, self.labs_pred)
+        score = v_measure_score(self.y, self._labs_pred)
         logging.info(f"V-score: {score:4.2f}")
         return score
     
     def draw(self, imgs_path, ncols=5, img_size=(60, 60)):
         if type(imgs_path) is str:
             imgs_path = Path(imgs_path)
-        clusters = set(self.labs_pred)
+        clusters = set(self._labs_pred)
         nclust = len(clusters)
 
         for r in clusters:
-            mask = self.labs_pred == r
+            mask = self._labs_pred == r
             curr_names = [name for m, name in zip(mask, self.ids) if m]
             curr_boxes = [box for m, box in zip(mask, self.boxes) if m]
             nshot = 0

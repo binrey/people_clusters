@@ -16,11 +16,11 @@ from random import choices
 
 class DataLoader(ABC):
     @abstractmethod
-    def read_gt(self, data_path):
+    def read_gt(self, data_path:str):
         pass
 
     @staticmethod
-    def read_encodings(self, data_path):
+    def read_encodings(self, data_path:str):
         pass
 
     @staticmethod
@@ -31,23 +31,29 @@ class DataLoader(ABC):
     def get_xy(self):
         pass
 
+    @property
+    def encodings(self):
+        return self._encodings
+
+    @property
+    def data(self):
+        return self._data
+
 
 class MyDataLoader(DataLoader):
-    def __init__(self):
-        pass
 
     def read_gt(self, data_path):
-        self.data = pd.read_csv(data_path, usecols=["cluster_id", "file_name"])
+        self._data = pd.read_csv(data_path, usecols=["cluster_id", "file_name"])
         enc = LabelEncoder()
-        self.data["cluster_num"] = enc.fit_transform(self.data.cluster_id)
-        logging.info(f"Loaded {len(self.data)} images")
+        self._data["cluster_num"] = enc.fit_transform(self._data.cluster_id)
+        logging.info(f"Loaded {len(self._data)} images")
     
     def read_encodings(self, data_path):
-        self.encodings = json.load(open(data_path, "r"))
-        logging.info(f"Loaded {len(self.encodings)} encodings")
+        self._encodings = json.load(open(data_path, "r"))
+        logging.info(f"Loaded {len(self._encodings)} encodings")
 
     def show_stats(self):
-        counter = Counter(self.data.cluster_num)
+        counter = Counter(self._data.cluster_num)
         plt.plot(range(len(counter)), sorted(counter.values(), reverse=True), ".-")
         plt.xlabel("cluster number")
         plt.ylabel("elements count")
@@ -55,9 +61,9 @@ class MyDataLoader(DataLoader):
     
     def get_xy(self):
         gt, x, ids, boxes = [], [], [], []
-        for key, enc in self.encodings.items():
+        for key, enc in self._encodings.items():
             if len(enc["encoding"]):
-                tmp = self.data[self.data.file_name == key]
+                tmp = self._data[self._data.file_name == key]
                 if len(tmp):
                     gt.append(tmp.cluster_num.values[0])
                     x.append(enc["encoding"])
@@ -66,7 +72,7 @@ class MyDataLoader(DataLoader):
         x, gt, boxes = np.array(x), np.array(gt), np.array(boxes)
         logging.info(f"Sync images with faces. Encodings x: {x.shape}, labeled clusters y:{gt.shape}")
         return x, gt, ids, boxes
-
+    
 
 image_types = (".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff")
 
